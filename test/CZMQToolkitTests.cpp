@@ -12,8 +12,8 @@ TEST_F(CZMQToolkitTests, HighWaterMark) {
    CZMQToolkit::setHWMAndBuffer(mReplySocket, expectedHighWaterMark);
    CZMQToolkit::PrintCurrentHighWater(mReplySocket, mTarget);
 
-   EXPECT_EQ(expectedHighWaterMark, zsocket_rcvhwm(mReplySocket));
-   EXPECT_EQ(expectedHighWaterMark, zsocket_sndhwm(mReplySocket));
+   EXPECT_EQ(expectedHighWaterMark, zsock_rcvhwm(mReplySocket));
+   EXPECT_EQ(expectedHighWaterMark, zsock_sndhwm(mReplySocket));
 }
 
 TEST_F(CZMQToolkitTests, SendExistingMessageFailures) {

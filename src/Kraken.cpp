@@ -22,20 +22,17 @@ Kraken::Kraken():
    mIdentity(nullptr),
    mTimeoutMs(300000), //5 Minutes
    mChunk(nullptr) {
-   mCtx = zctx_new();
-   CHECK(mCtx);
-   mRouter = zsocket_new(mCtx, ZMQ_ROUTER);
-   CHECK(mRouter);
+   mRouter = zsock_new(ZMQ_ROUTER);
 }
 
 /// Set location of the queue (TCP location)
 Kraken::Spear Kraken::SetLocation(const std::string& location) {
    mLocation = location;
-   zsocket_set_hwm(mRouter, mQueueLength * 2);
+   zsock_set_hwm(mRouter, mQueueLength * 2);
 
-   int result = zsocket_bind(mRouter, mLocation.c_str());
+   int result = zsock_bind(mRouter, mLocation.c_str());
 
-   LOG(INFO) << "zsocket_bind result: " << result << ", " << location;
+   LOG(INFO) << "zsock_bind result: " << result << ", " << location;
    return (-1 == result) ? Kraken::Spear::MISS : Kraken::Spear::IMPALED;
 }
 
@@ -82,8 +79,10 @@ void Kraken::FreeChunk() {
 Kraken::Battling Kraken::PollTimeout(int timeoutMs) {
    using namespace std::chrono;
 
+   zpoller_t* poller = zpoller_new(mRouter, NULL);
    steady_clock::time_point pollStartMs = steady_clock::now();
-   while (!zsocket_poll(mRouter, 1)) {
+   //while (!zsocket_poll(mRouter, 1)) {
+   while (!zpoller_wait(poller, 1)) {
       int pollElapsedMs = duration_cast<milliseconds>(steady_clock::now() - pollStartMs).count();
       if (pollElapsedMs >= timeoutMs) {
          return Kraken::Battling::TIMEOUT;
@@ -194,10 +193,8 @@ Kraken::Battling Kraken::SendRawData(const uint8_t* data, int size) {
 
 /// Destruction of the Kraken and zmq socket and memory cleanup
 Kraken::~Kraken() {
-   zsocket_unbind(mRouter, mLocation.c_str());
-   zsocket_destroy(mCtx, mRouter);
-   zctx_destroy(&mCtx);
-   mCtx = nullptr;
+   zsock_unbind(mRouter, mLocation.c_str());
+   zsock_destroy(&mRouter);
    FreeOldRequests();
    FreeChunk();
 }

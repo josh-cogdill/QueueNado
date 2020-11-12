@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 #include "CZMQToolkit.h"
-struct _zctx_t;
-typedef struct _zctx_t zctx_t;
+#include "czmq.h"
+
 class Vampire {
 public:
    explicit Vampire(const std::string& location);
@@ -27,8 +27,7 @@ private:
    void setIpcFilePermissions();
    std::string mLocation;
    int mHwm;
-   void* mBody;
-   zctx_t* mContext;
+   zsock_t* mBody;
    int mLinger;
    int mIOThredCount;
    bool mOwnSocket;

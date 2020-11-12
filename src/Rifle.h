@@ -2,10 +2,9 @@
 #include <vector>
 #include <string>
 #include "CZMQToolkit.h"
+#include "czmq.h"
 
 #define SIZE_OF_STAKE_BUNDLE 500
-struct _zctx_t;
-typedef struct _zctx_t zctx_t;
 class Rifle {
 public:
    explicit Rifle(const std::string& location);
@@ -30,8 +29,7 @@ private:
    void setIpcFilePermissions();
    std::string mLocation;
    int mHwm;
-   void* mChamber;
-   zctx_t* mContext;
+   zsock_t* mChamber;
    int mLinger;
    int mIOThredCount;
    bool mOwnSocket;

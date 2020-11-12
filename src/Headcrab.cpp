@@ -16,7 +16,7 @@
  * @param binding
  *   A ZeroMQ binding
  */
-Headcrab::Headcrab(const std::string& binding) : mBinding(binding), mContext(NULL), mFace(NULL) {
+Headcrab::Headcrab(const std::string& binding) : mBinding(binding), mFace(NULL) {
 
 }
 
@@ -24,9 +24,6 @@ Headcrab::Headcrab(const std::string& binding) : mBinding(binding), mContext(NUL
  * Default deconstructor
  */
 Headcrab::~Headcrab() {
-   if (mContext) {
-      zctx_destroy(&mContext);
-   }
 }
 
 /**
@@ -47,15 +44,15 @@ int Headcrab::GetHighWater() {
  * @return 
  *   A pointer to the socket (or NULL in the case of a failure)
  */
-void* Headcrab::GetFace(zctx_t* context) {
-   if (mFace == NULL && context) {
-      void* face = zsocket_new(context, ZMQ_REP);
+zsock_t* Headcrab::GetFace() {
+   if (mFace == NULL) {
+      zsock_t* face = zsock_new(ZMQ_REP);
       assert(face != NULL);
-      zsocket_set_sndhwm(face, GetHighWater());
-      zsocket_set_rcvhwm(face, GetHighWater());
-      zsocket_set_linger(face, 0);
+      zsock_set_sndhwm(face, GetHighWater());
+      zsock_set_rcvhwm(face, GetHighWater());
+      zsock_set_linger(face, 0);
       int connectRetries = 100;
-      while ((zsocket_bind(face, GetBinding().c_str()) < 0) && connectRetries -- > 0) {
+      while ((zsock_bind(face, GetBinding().c_str()) < 0) && connectRetries -- > 0) {
          boost::this_thread::interruption_point();
          int err = zmq_errno();
          if (err == ETERM) {
@@ -103,21 +100,14 @@ void Headcrab::setIpcFilePermissions() {
  *   If initialization has worked 
  */
 bool Headcrab::ComeToLife() {
-   if (! mContext) {
-      mContext = zctx_new();
-      zctx_set_linger(mContext, 0); // linger for a millisecond on close
-      zctx_set_sndhwm(mContext, GetHighWater());
-      zctx_set_rcvhwm(mContext, GetHighWater()); // HWM on internal thread communication
-      zctx_set_iothreads(mContext, 1);
-   }
-   if (! mFace) {
-      void* face = GetFace(mContext);
-      if (! face) {
+   if (!mFace) {
+      zsock_t* face = GetFace();
+      if (!face) {
          return false;
       }
    }
 
-   return ((mContext != NULL) && (mFace != NULL));
+   return (mFace != NULL);
 }
 
 /**
@@ -126,15 +116,6 @@ bool Headcrab::ComeToLife() {
  */
 std::string Headcrab::GetBinding() const {
    return mBinding;
-}
-
-/**
- * Get the contex
- * @return 
- *   The context if the headcrab is alive, or NULL
- */
-zctx_t* Headcrab::GetContext() const {
-   return mContext;
 }
 
 bool Headcrab::GetHitBlock(std::string& theHit) {
@@ -147,11 +128,11 @@ bool Headcrab::GetHitBlock(std::string& theHit) {
 }
 
 bool Headcrab::GetHitBlock(std::vector<std::string>& theHits) {
-   if (! mFace) {
+   if (!mFace) {
       return false;
    }
    zmsg_t* message = zmsg_recv(mFace);
-   if (! message) {
+   if (!message) {
       return false;
    }
    //std::cout << "Got message with " << zmsg_size(message) << " parts" << std::endl;
@@ -182,10 +163,12 @@ bool Headcrab::GetHitWait(std::string& theHit, const int timeout) {
 }
 
 bool Headcrab::GetHitWait(std::vector<std::string>& theHits, const int timeout) {
-   if (! mFace) {
+   if (!mFace) {
       return false;
    }
-   if (zsocket_poll(mFace, timeout)) {
+   
+   zpoller_t* poller = zpoller_new(mFace, NULL);
+   if (zpoller_wait(poller, timeout)) {
       return GetHitBlock(theHits);
    }
    return false;

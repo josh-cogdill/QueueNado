@@ -36,7 +36,7 @@ protected:
       mTarget += makeATarget.str();
       mTargetPath = makeATarget.str();
       srandom((unsigned) time(NULL));
-      zctx_interrupted = false;
+      zsys_interrupted = false;
    }
 
    virtual void TearDown() {

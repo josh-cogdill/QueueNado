@@ -3,15 +3,14 @@
 
 #include "Shotgun.h"
 #include "g3log/g3log.hpp"
-#include "czmq.h"
 #include "Death.h"
 /**
  * Shotgun class is a ZeroMQ Publisher.
  */
 Shotgun::Shotgun() {
-   mCtx = zctx_new();
-   assert(mCtx);
-   mGun = zsocket_new(mCtx, ZMQ_PUB);
+   LOG(INFO) << "New socket";
+   mGun = zsock_new(ZMQ_PUB);
+   LOG(INFO) << "After new socket";
 }
 
 /**
@@ -19,9 +18,9 @@ Shotgun::Shotgun() {
  * @param location
  */
 void Shotgun::Aim(const std::string& location) {
-   zsocket_set_sndhwm(mGun, 32 * 1024);
-   zsocket_set_rcvhwm(mGun, 32 * 1024);
-   int rc = zsocket_bind(mGun, location.c_str());
+   zsock_set_sndhwm(mGun, 32 * 1024);
+   zsock_set_rcvhwm(mGun, 32 * 1024);
+   int rc = zsock_bind(mGun, location.c_str());
    if (rc == - 1) {
 
       LOG(WARNING) << "bound socket rc:" << rc << " : location: " << location;
@@ -89,7 +88,6 @@ void Shotgun::Fire(const std::vector<std::string>& bullets) {
  * Cleanup our socket and context.
  */
 Shotgun::~ Shotgun() {
-   zsocket_destroy(mCtx, mGun);
-   zctx_destroy(&mCtx);
+   zsock_destroy(&mGun);
 }
 

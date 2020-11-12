@@ -1,11 +1,9 @@
 #pragma once
 
-
+#include "czmq.h"
 #include <stdlib.h>
 #include <vector>
 #include <string>
-struct _zctx_t;
-typedef struct _zctx_t zctx_t;
 class Alien {
 public:
    Alien();
@@ -15,6 +13,5 @@ public:
    virtual ~Alien();
     
 private:
-   void *mBody;
-   zctx_t *mCtx;
+   zsock_t* mBody;
 };

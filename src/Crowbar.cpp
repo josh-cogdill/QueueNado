@@ -13,8 +13,8 @@
  * @param binding
  *   A std::string description of a ZMQ socket
  */
-Crowbar::Crowbar(const std::string& binding) : mContext(NULL),
-mBinding(binding), mTip(NULL), mOwnsContext(true) {
+Crowbar::Crowbar(const std::string& binding) :
+mBinding(binding), mTip(NULL) {
    
 }
 
@@ -24,33 +24,15 @@ mBinding(binding), mTip(NULL), mOwnsContext(true) {
  * @param target
  *   A living(initialized) headcrab
  */
-Crowbar::Crowbar(const Headcrab& target) : mContext(target.GetContext()),
-mBinding(target.GetBinding()), mTip(NULL), mOwnsContext(false) {
-   if (mContext == NULL) {
-      mOwnsContext = true;
-   }
+Crowbar::Crowbar(const Headcrab& target) :
+mBinding(target.GetBinding()), mTip(NULL) {
    
-}
-
-/**
- * Construct a crowbar for beating things at binding with the given context
- * @param binding
- *   The binding of the bound socket for the given context
- * @param context
- *   A working context
- */
-Crowbar::Crowbar(const std::string& binding, zctx_t* context) : mContext(context),
-mBinding(binding), mTip(NULL), mOwnsContext(false) {
-
 }
 
 /**
  * Default deconstructor
  */
 Crowbar::~Crowbar() {
-   if (mOwnsContext && mContext != NULL) {
-      zctx_destroy(&mContext);
-   }
 }
 
 /**
@@ -69,33 +51,33 @@ int Crowbar::GetHighWater() {
  * @return
  *   A pointer to a zmq socket (or NULL in a failure) 
  */
-void* Crowbar::GetTip() {
-   void* tip = zsocket_new(mContext, ZMQ_REQ);
+zsock_t* Crowbar::GetTip() {
+   zsock_t* tip = zsock_new(ZMQ_REQ);
    if (!tip) {
       return NULL;
    }
    
-   zsocket_set_sndhwm(tip, GetHighWater());
-   zsocket_set_rcvhwm(tip, GetHighWater());
-   zsocket_set_linger(tip, 0);
+   zsock_set_sndhwm(tip, GetHighWater());
+   zsock_set_rcvhwm(tip, GetHighWater());
+   zsock_set_linger(tip, 0);
    int connectRetries = 100;
 
-   while (zsocket_connect(tip, mBinding.c_str()) != 0 && connectRetries-- > 0 && !zctx_interrupted) {
+   while (zsock_connect(tip, mBinding.c_str()) != 0 && connectRetries-- > 0 && !zsys_interrupted) {
       boost::this_thread::interruption_point();
       int err = zmq_errno();
       if (err == ETERM) {
-         zsocket_destroy(mContext, tip);
+         zsock_destroy(&tip);
          return NULL;
       }
       std::string error(zmq_strerror(err));
       LOG(WARNING) << "Could not connect to " << mBinding << ":" << error;
       zclock_sleep(100);
    }
-   if (zctx_interrupted) {
+   if (zsys_interrupted) {
       LOG(INFO) << "Caught Interrupt Signal";
    }
    if (connectRetries <= 0) {
-      zsocket_destroy(mContext, tip);
+      zsock_destroy(&tip);
       return NULL;
    }
 
@@ -103,22 +85,11 @@ void* Crowbar::GetTip() {
 }
 
 bool Crowbar::Wield() {
-   if (!mContext) {
-      mContext = zctx_new();
-      zctx_set_linger(mContext, 0); // linger for a millisecond on close
-      zctx_set_sndhwm(mContext, GetHighWater());
-      zctx_set_rcvhwm(mContext, GetHighWater()); // HWM on internal thread communicaiton
-      zctx_set_iothreads(mContext, 1);
-   }
    if (!mTip) {
       mTip = GetTip();
-      if (!mTip && mOwnsContext) {
-         zctx_destroy(&mContext);
-         mContext = NULL;
-      }
    }
    
-   return ((mContext != NULL) && (mTip != NULL));
+   return (mTip != NULL);
 }
 
 bool Crowbar::Swing(const std::string& hit) {
@@ -224,12 +195,12 @@ bool Crowbar::WaitForKill(std::vector<std::string>& guts, const int timeout) {
    if (!mTip) {
       return false;
    }
-   if (zsocket_poll(mTip, timeout)) {
+
+   zpoller_t* poller = zpoller_new(mTip, NULL);
+   //if (zsocket_poll(mTip, timeout)) {
+   if (zpoller_wait(poller, timeout)) {
       return BlockForKill(guts);
    }
    return false;
 }
 
-zctx_t* Crowbar::GetContext() {
-   return mContext;
-}

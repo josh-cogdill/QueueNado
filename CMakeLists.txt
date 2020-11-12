@@ -115,7 +115,7 @@ enable_testing(true)
 
 include_directories(test)
 include_directories(${PROJECT_SRC})
-file(GLOB TEST_SRC_FILES "test/*.cpp")
+file(GLOB TEST_SRC_FILES "test/RifleVampireTests.cpp")
 
 SET(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -rdynamic -Wunused -std=c++14 -pthread -D_GLIBCXX_USE_NANOSLEEP")
 add_executable(UnitTestRunner thirdparty/test_main.cpp ${TEST_SRC_FILES} )

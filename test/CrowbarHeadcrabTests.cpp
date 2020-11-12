@@ -40,23 +40,19 @@ TEST_F(CrowbarHeadcrabTests, ipcFilesCleanedOnFatal) {
 TEST_F(CrowbarHeadcrabTests, SimpleConstructAndWieldCrowbar) {
 
    Crowbar firstStack(mTarget);
-   ASSERT_TRUE(NULL == firstStack.GetContext());
    Crowbar* firstHeap = new Crowbar(mTarget);
    delete firstHeap;
    ASSERT_TRUE(firstStack.Wield());
-   ASSERT_TRUE(NULL != firstStack.GetContext());
 }
 
 TEST_F(CrowbarHeadcrabTests, SimpleConstructAndPrepHeadcrab) {
 
    Headcrab firstStack(mTarget);
    EXPECT_EQ(mTarget, firstStack.GetBinding());
-   EXPECT_EQ(NULL, firstStack.GetContext());
    Headcrab* firstHeap = new Headcrab(mTarget);
    delete firstHeap;
 
    ASSERT_TRUE(firstStack.ComeToLife());
-   ASSERT_TRUE(NULL != firstStack.GetContext());
 
 }
 
@@ -64,15 +60,12 @@ TEST_F(CrowbarHeadcrabTests, ConstructCrowbarinResponseToHeadcrab) {
 
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    Crowbar shooter(target);
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    Headcrab* targetHeap = new Headcrab(mTarget);
    ASSERT_TRUE(targetHeap->ComeToLife());
@@ -82,24 +75,21 @@ TEST_F(CrowbarHeadcrabTests, ConstructCrowbarinResponseToHeadcrab) {
    delete targetHeap;
 }
 
-TEST_F(CrowbarHeadcrabTests, ConstructCrowbarwithContextandBinding) {
+TEST_F(CrowbarHeadcrabTests, ConstructCrowbarwithBinding) {
 
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
-   Crowbar shooter(target.GetBinding(), target.GetContext());
+   Crowbar shooter(target.GetBinding());
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    Headcrab* targetHeap = new Headcrab(mTarget);
    ASSERT_TRUE(targetHeap->ComeToLife());
 
-   Crowbar* shooterHeap = new Crowbar(targetHeap->GetBinding(), targetHeap->GetContext());
+   Crowbar* shooterHeap = new Crowbar(targetHeap->GetBinding());
    delete shooterHeap;
    delete targetHeap;
 }
@@ -108,15 +98,12 @@ TEST_F(CrowbarHeadcrabTests, SmashAHeadcrab) {
 
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    Crowbar shooter(target);
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    std::string expected("abc123");
    std::string bullet = expected;
@@ -138,15 +125,12 @@ TEST_F(CrowbarHeadcrabTests, SmashAHeadcrabBlocking) {
 
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    Crowbar shooter(target);
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    std::string expected("abc123");
    std::string bullet = expected;
@@ -168,15 +152,12 @@ TEST_F(CrowbarHeadcrabTests, SmashAHeadcrabMulti) {
 
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    Crowbar shooter(target);
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    std::string expected("abc123");
    std::vector<std::string> data;
@@ -210,15 +191,12 @@ TEST_F(CrowbarHeadcrabTests, SmashAHeadcrabBlockingMulti) {
 
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    Crowbar shooter(target);
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    std::string expected("abc123");
    std::vector<std::string> data;
@@ -250,15 +228,12 @@ TEST_F(CrowbarHeadcrabTests, SmashAHeadcrabInProc) {
    mTarget = "inproc://headcrabkiller";
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    Crowbar shooter(target);
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    std::string expected("abc123");
    std::string bullet = expected;
@@ -285,15 +260,12 @@ TEST_F(CrowbarHeadcrabTests, SmashAHeadcrabTCP) {
    mTarget = "tcp://127.0.0.1:12345";
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    Crowbar shooter(target);
 
    ASSERT_TRUE(shooter.Wield());
-   ASSERT_EQ(target.GetContext(), shooter.GetContext());
 
    std::string expected("abc123");
    std::string bullet = expected;
@@ -340,10 +312,8 @@ TEST_F(CrowbarHeadcrabTests, DISABLED_CrowbarSpeedTest) {
    unlink(mTargetPath.c_str());
    Headcrab target(mTarget);
    EXPECT_EQ(mTarget, target.GetBinding());
-   EXPECT_EQ(NULL, target.GetContext());
 
    ASSERT_TRUE(target.ComeToLife());
-   ASSERT_TRUE(NULL != target.GetContext());
 
    std::string sentData(500, 'a');
    int numberOfHits = PACKETS_TO_TEST;

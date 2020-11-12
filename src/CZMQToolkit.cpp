@@ -13,10 +13,10 @@ void CZMQToolkit::setHWMAndBuffer(void* socket, const int size) {
    //      sizeof (size));
    //   zmq_setsockopt(socket, ZMQ_RCVHWM, &size,
    //      sizeof (size));
-   zsocket_set_rcvhwm(socket, size);
-   //      zsocket_set_rcvbuf(socket, size);
-   zsocket_set_sndhwm(socket, size);
-   //   zsocket_set_sndbuf(socket, size);
+   zsock_set_rcvhwm(socket, size);
+   //      zsock_set_rcvbuf(socket, size);
+   zsock_set_sndhwm(socket, size);
+   //   zsock_set_sndbuf(socket, size);
 }
 
 /**
@@ -25,10 +25,10 @@ void CZMQToolkit::setHWMAndBuffer(void* socket, const int size) {
  * @param name
  */
 void CZMQToolkit::PrintCurrentHighWater(void* socket, const std::string& name) {
-   int rcvbuf = zsocket_rcvbuf(socket);
-   int rcvhwm = zsocket_rcvhwm(socket);
-   int sndbuf = zsocket_sndbuf(socket);
-   int sndhwm = zsocket_sndhwm(socket);
+   int rcvbuf = zsock_rcvbuf(socket);
+   int rcvhwm = zsock_rcvhwm(socket);
+   int sndbuf = zsock_sndbuf(socket);
+   int sndhwm = zsock_sndhwm(socket);
    LOG(DEBUG) << name << ": rcvbuf:" << rcvbuf << " rcvhwm:"
            << rcvhwm << " sndbuf:" << sndbuf << " sndhwm:" << sndhwm;
 }

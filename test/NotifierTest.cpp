@@ -9,6 +9,7 @@
 #include "Notifier.h"
 #include <StopWatch.h>
 #include <Result.h>
+#include <future>
 
 namespace {
 
@@ -20,7 +21,8 @@ namespace {
    const std::vector<std::string> vectorToSend = {"Craig", "is", "cool"};
    enum SendMessageType {NONE = 0, MSG = 1, VECTOR = 2};
    SendMessageType SEND_MSG_TYPE = NONE;
-
+   std::future<void*> gSenderThread;
+   std::vector<std::future<void*>> gReceiverThreads;
 
    void HandleNotification(std::unique_ptr<Listener> const &listener, TestThreadData& threadData) {
       bool confirmed = false;
@@ -82,7 +84,6 @@ namespace {
          return nullptr;
       }
       NotifyParentThatChildHasStarted(threadData);
-
       while (ParentHasNotSentExitSignal(threadData)) {
          if (TimeToSendANotification(threadData)) {
             switch(SEND_MSG_TYPE) {
@@ -112,14 +113,15 @@ namespace {
    }
 
    void SpawnSender_WaitForStartup(TestThreadData& senderData) {
-      zthread_new(&SenderThread, reinterpret_cast<TestThreadData*>(&senderData));
+	   gSenderThread = std::async(std::launch::async, &SenderThread, reinterpret_cast<TestThreadData*>(&senderData));
+      
       EXPECT_TRUE(SleepUntilCondition({{senderData.hasStarted}}));
       EXPECT_TRUE(FileIO::DoesFileExist(notifierQueuePath));
       EXPECT_TRUE(FileIO::DoesFileExist(handshakeQueuePath));
    }
 
    void SpawnReceiver_WaitForStartup(TestThreadData& receiverData) {
-      zthread_new(&ReceiverThread, reinterpret_cast<TestThreadData*>(&receiverData));
+      gReceiverThreads.push_back(std::async(std::launch::async, &ReceiverThread, reinterpret_cast<TestThreadData*>(&receiverData)));
       EXPECT_TRUE(SleepUntilCondition({{receiverData.hasStarted}}));
    }
    
@@ -146,10 +148,11 @@ namespace {
          EXPECT_TRUE(SleepUntilCondition({{thread.hasExited}}));
          EXPECT_TRUE(ThreadIsShutdown(thread));
       }
+      gReceiverThreads.clear();
    }
 } //namespace
 
-
+/*
 TEST_F(NotifierTest, InitializationCreatesIPC) {
    EXPECT_FALSE(FileIO::DoesFileExist(notifierQueuePath));
    EXPECT_FALSE(FileIO::DoesFileExist(handshakeQueuePath));
@@ -166,16 +169,10 @@ TEST_F(NotifierTest, 1Message1Receiver_NoResponse_WithMessage) {
    TestThreadData receiver1ThreadData("receiver");
    EXPECT_FALSE(FileIO::DoesFileExist(notifierQueuePath));
    EXPECT_FALSE(FileIO::DoesFileExist(handshakeQueuePath));
-
    SpawnSender_WaitForStartup(senderData);
-
    SpawnReceiver_WaitForStartup(receiver1ThreadData);
-
    ExchangeNotification(senderData, receiver1ThreadData);
-
    VerifySingleMessage(receiver1ThreadData);
-
-
    Shutdown({senderData, receiver1ThreadData});
 }
 
@@ -272,7 +269,7 @@ TEST_F(NotifierTest, 1Message2Receivers_ExpectFeedback_VectorMessage) {
 
    Shutdown({senderData, receiver1ThreadData, receiver2ThreadData});
 }
-
+*/
 TEST_F(NotifierTest, 2Messages2Receivers_RestartReceivers_ExpectFeedback_NoMessage) {
    SEND_MSG_TYPE = NONE;
    const size_t expectedFeedback = 2;

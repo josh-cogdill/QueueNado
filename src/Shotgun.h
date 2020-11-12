@@ -2,10 +2,9 @@
 
 
 #include <stdlib.h>
+#include "czmq.h"
 #include <vector>
 #include <string>
-struct _zctx_t;
-typedef struct _zctx_t zctx_t;
 class Shotgun {
 public:
    Shotgun();
@@ -15,6 +14,5 @@ public:
    virtual ~Shotgun();
 private:
    void setIpcFilePermissions(const std::string& location);
-   void *mGun;
-   zctx_t *mCtx;
+   zsock_t* mGun;
 };

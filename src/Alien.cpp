@@ -1,5 +1,4 @@
 #include <memory>
-#include "czmq.h"
 #include "boost/thread.hpp"
 #include "g3log/g3log.hpp"
 
@@ -9,10 +8,7 @@
  * Alien is a ZeroMQ Sub socket.
  */
 Alien::Alien() {
-   mCtx = zctx_new();
-   CHECK(mCtx);
-   mBody = zsocket_new(mCtx, ZMQ_SUB);
-   CHECK(mBody);
+   mBody = zsock_new(ZMQ_SUB);
 }
 
 /**
@@ -22,10 +18,10 @@ Alien::Alien() {
 void Alien::PrepareToBeShot(const std::string& location) {
    //Subscribe to everything
    char dummy = '\0';
-   zsocket_set_subscribe(mBody, &dummy);
-   zsocket_set_rcvhwm(mBody, 32 * 1024);
-   zsocket_set_sndhwm(mBody, 32 * 1024);
-   int rc = zsocket_connect(mBody, location.c_str());
+   zsock_set_subscribe(mBody, &dummy);
+   zsock_set_rcvhwm(mBody, 32 * 1024);
+   zsock_set_sndhwm(mBody, 32 * 1024);
+   int rc = zsock_connect(mBody, location.c_str());
    if (rc == -1) {
       LOG(WARNING) << "location: " << location;
       LOG(WARNING) << "connect socket rc == " << rc;
@@ -60,7 +56,10 @@ void Alien::GetShot(const unsigned int timeout, std::vector<std::string>& bullet
       return;
    }
 
-   if (zsocket_poll(mBody, timeout)) {
+   zpoller_t* poller = zpoller_new(mBody, NULL);
+
+   //if (zsocket_poll(mBody, timeout)) {
+   if (zpoller_wait(poller, timeout)) {
       zmsg_t* msg = zmsg_recv(mBody);
       if (msg && zmsg_size(msg) >= 2) {
          zframe_t* data = zmsg_pop(msg);
@@ -94,6 +93,5 @@ void Alien::GetShot(const unsigned int timeout, std::vector<std::string>& bullet
  * Destroy the body and context of the alien.
  */
 Alien::~Alien() {
-   zsocket_destroy(mCtx, mBody);
-   zctx_destroy(&mCtx);
+   zsock_destroy(&mBody);
 }

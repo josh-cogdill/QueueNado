@@ -3,7 +3,6 @@
 #include <sys/stat.h>
 
 #include "Vampire.h"
-#include "czmq.h"
 #include "g3log/g3log.hpp"
 #include "Death.h"
 
@@ -15,7 +14,6 @@ Vampire::Vampire(const std::string& location) :
 mLocation(location),
 mHwm(250),
 mBody(NULL),
-mContext(NULL),
 mLinger(10),
 mIOThredCount(1),
 mOwnSocket(false) {
@@ -86,21 +84,14 @@ bool Vampire::PrepareToBeShot() {
    if (mBody) {
       return true;
    }
-   if (!mContext) {
-      mContext = zctx_new();
-      zctx_set_sndhwm(mContext, GetHighWater());
-      zctx_set_rcvhwm(mContext, GetHighWater());// HWM on internal thread communication
-      //zctx_set_linger(mContext, mLinger); // linger for a millisecond on close
-      zctx_set_iothreads(mContext, GetIOThreads());
-   }
    if (!mBody) {
-      mBody = zsocket_new(mContext, ZMQ_PULL);
+      mBody = zsock_new(ZMQ_PULL);
       CZMQToolkit::setHWMAndBuffer(mBody, GetHighWater());
       if (GetOwnSocket()) {
-         int result = zsocket_bind(mBody, mLocation.c_str());
+         int result = zsock_bind(mBody, mLocation.c_str());
 
          if (result < 0) {
-            zsocket_destroy(mContext, mBody);
+            zsock_destroy(&mBody);
             mBody = NULL;
             LOG(WARNING) << "Vampire Can't bind : " << result;
             return false;
@@ -108,9 +99,9 @@ bool Vampire::PrepareToBeShot() {
          setIpcFilePermissions();
          Death::Instance().RegisterDeathEvent(&Death::DeleteIpcFiles, mLocation);
       } else {
-         int result = zsocket_connect(mBody, mLocation.c_str());
+         int result = zsock_connect(mBody, mLocation.c_str());
          if (result < 0) {
-            zsocket_destroy(mContext, mBody);
+            zsock_destroy(&mBody);
             mBody = NULL;
             LOG(WARNING) << "Vampire Can't connect : " << result;
             return false;
@@ -118,7 +109,7 @@ bool Vampire::PrepareToBeShot() {
       }
       CZMQToolkit::PrintCurrentHighWater(mBody, "Vampire: body");
    }
-   return ((mContext != NULL) && (mBody != NULL));
+   return (mBody != NULL);
 
 }
 
@@ -203,7 +194,9 @@ bool Vampire::GetStake(void*& stake, const int timeout) {
    }
    bool success = false;
    zmsg_t* message = NULL;
-   if (zsocket_poll(mBody, timeout)) {
+
+   zpoller_t* poller = zpoller_new(mBody,NULL);
+   if (zpoller_wait(poller, timeout)) {
       message = zmsg_recv(mBody);
       if (message && (zmsg_size(message) == 1)) {
          zframe_t* frame = zmsg_pop(message);
@@ -258,7 +251,9 @@ bool Vampire::GetStakes(std::vector<std::pair<void*, unsigned int> >& stakes,
    }
    bool success = false;
    zmsg_t* message = NULL;
-   if (zsocket_poll(mBody, timeout)) {
+
+   zpoller_t* poller = zpoller_new(mBody, NULL);
+   if (zpoller_wait(poller, timeout)) {
       message = zmsg_recv(mBody);
       if (message && zmsg_size(message) == 1) {
          zframe_t* frame = zmsg_pop(message);
@@ -293,14 +288,8 @@ bool Vampire::GetStakes(std::vector<std::pair<void*, unsigned int> >& stakes,
  * @return 
  */
 void Vampire::Destroy() {
-   if (mContext != NULL) {
-      //LOG(DEBUG) << "Vampire: destroying context";
-      zsocket_destroy(mContext, mBody);
-      zctx_destroy(&mContext);
-      //zclock_sleep(mLinger * 2);
-      mContext = NULL;
-      mBody = NULL;
-   }
+   zsock_destroy(&mBody);
+   mBody = NULL;
 }
 
 /**

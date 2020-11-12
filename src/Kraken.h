@@ -11,8 +11,6 @@
 #include <vector>
 #include <czmq.h>
 
-struct _zctx_t;
-typedef struct _zctx_t zctx_t;
 /** Harpoon-Kraken is a PipeLine communication pattern used to
 *  Battling files or plain data from a server to a client. 
 * 
@@ -53,8 +51,7 @@ protected:
    void FreeChunk();
 
 private:
-   void* mRouter;
-   zctx_t* mCtx;
+   zsock_t* mRouter;
    std::string mLocation;
    size_t mQueueLength;
    size_t mMaxChunkSize;

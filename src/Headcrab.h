@@ -10,17 +10,14 @@
 #include <string>
 #include <vector>
 
-struct _zctx_t;
-typedef struct _zctx_t zctx_t;
 class Headcrab {
 public:
    explicit Headcrab(const std::string& binding);
    virtual ~Headcrab();
    std::string GetBinding() const;
-   zctx_t* GetContext() const;
    bool ComeToLife();
 
-   void* GetFace(zctx_t* context);
+   zsock_t* GetFace();
    bool GetHitBlock(std::vector<std::string>& theHits);
    bool GetHitWait(std::vector<std::string>& theHit,const int timeout);
    bool SendSplatter(std::vector<std::string>& feedback);
@@ -31,11 +28,10 @@ public:
 private:
 
    void setIpcFilePermissions();
-   Headcrab(const Headcrab& that) : mContext(NULL), mFace(NULL) {
+   Headcrab(const Headcrab& that) : mFace(NULL) {
    }
 
    std::string mBinding;
-   zctx_t* mContext;
-   void* mFace;
+   zsock_t* mFace;
 };
 

@@ -45,8 +45,7 @@ protected:
    void FreeChunk();
    
 private:
-   void* mDealer;
-   zctx_t* mCtx;
+   zsock_t* mDealer;
    size_t mQueueLength;
    int mTimeoutMs;
    size_t mCredit;

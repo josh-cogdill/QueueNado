@@ -68,7 +68,9 @@ struct TestThreadData {
 };
 
 void NotifyParentThatChildHasStarted(TestThreadData& threadData) {
+	LOG(INFO) << "Before notify parent child has started";
    threadData.hasStarted->store(true);
+	LOG(INFO) << "After notify parent child has started";
 }
 
 bool MaxTimeoutHasOccurred(StopWatch& timeSinceStart) {
